@@ -344,6 +344,14 @@ var Translations = map[string][]struct {
 			Path:     jsonpath.MustCompile("$.spec.template.spec.containers[0].env[?(@.name='RESOURCE_GROUP_NAME')].value"),
 			Template: "{{ .ContainerService.Properties.AzProfile.ResourceGroup }}",
 		},
+		{
+			Path:     jsonpath.MustCompile("$.spec.template.spec.containers[0].env[?(@.name='ACCOUNT')].value"),
+			Template: "{{ .Config.GenevaLoggingAccount }}",
+		},
+		{
+			Path:     jsonpath.MustCompile("$.spec.template.spec.containers[0].env[?(@.name='NAMESPACE')].value"),
+			Template: "{{ .Config.GenevaLoggingNamespace }}",
+		},
 	},
 	"DaemonSet.apps/openshift-azure-logging/td-agent": {
 		{

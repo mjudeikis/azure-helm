@@ -99,6 +99,8 @@ func convertConfigToAdmin(cs *Config) *admin.Config {
 		Images:                  convertImageConfigToAdmin(cs.Images),
 		ServiceCatalogClusterID: &cs.ServiceCatalogClusterID,
 		GenevaLoggingSector:     &cs.GenevaLoggingSector,
+		GenevaLoggingAccount:    &cs.GenevaLoggingAccount,
+		GenevaLoggingNamespace:  &cs.GenevaLoggingNamespace,
 	}
 }
 

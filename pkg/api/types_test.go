@@ -223,7 +223,9 @@ var marshalled = []byte(`{
 		"consoleOAuthSecret": "Config.ConsoleOAuthSecret",
 		"routerStatsPassword": "Config.RouterStatsPassword",
 		"serviceCatalogClusterId": "01010101-0101-0101-0101-010101010101",
-		"genevaLoggingSector": "Config.GenevaLoggingSector"
+		"genevaLoggingSector": "Config.GenevaLoggingSector",
+		"genevaLoggingAccount": "Config.GenevaLoggingAccount",
+		"genevaLoggingNamespace": "Config.GenevaLoggingNamespace"
 	}
 }`)
 

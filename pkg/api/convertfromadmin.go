@@ -293,6 +293,12 @@ func mergeConfig(oc *admin.OpenShiftManagedCluster, cs *OpenShiftManagedCluster)
 	if in.GenevaLoggingSector != nil {
 		out.GenevaLoggingSector = *in.GenevaLoggingSector
 	}
+	if in.GenevaLoggingNamespace != nil {
+		out.GenevaLoggingNamespace = *in.GenevaLoggingNamespace
+	}
+	if in.GenevaLoggingAccount != nil {
+		out.GenevaLoggingAccount = *in.GenevaLoggingAccount
+	}
 	return
 }
 

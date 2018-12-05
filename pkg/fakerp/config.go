@@ -108,12 +108,14 @@ func GetPluginConfig() (*api.PluginConfig, error) {
 		syncImage = os.Getenv("SYNC_IMAGE")
 	}
 	genevaConfig := api.GenevaConfig{
-		LoggingCert:     logCert,
-		LoggingKey:      logKey,
-		ImagePullSecret: pullSecret,
-		LoggingSector:   "US-Test",
-		LoggingImage:    "osarpint.azurecr.io/acs/mdsd:11201801",
-		TDAgentImage:    "osarpint.azurecr.io/acs/td-agent:latest",
+		LoggingCert:      logCert,
+		LoggingKey:       logKey,
+		ImagePullSecret:  pullSecret,
+		LoggingSector:    "US-Test",
+		LoggingAccount:   "OpenShift",
+		LoggingNamespace: "openshiftdiag",
+		LoggingImage:     "osarpint.azurecr.io/acs/mdsd:11201801",
+		TDAgentImage:     "osarpint.azurecr.io/acs/td-agent:latest",
 	}
 	return &api.PluginConfig{
 		SyncImage:       syncImage,
