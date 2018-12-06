@@ -299,6 +299,9 @@ func mergeConfig(oc *admin.OpenShiftManagedCluster, cs *OpenShiftManagedCluster)
 	if in.GenevaLoggingAccount != nil {
 		out.GenevaLoggingAccount = *in.GenevaLoggingAccount
 	}
+	if in.GenevaLoggingControlPlaneAccount != nil {
+		out.GenevaLoggingControlPlaneAccount = *in.GenevaLoggingControlPlaneAccount
+	}
 	return
 }
 

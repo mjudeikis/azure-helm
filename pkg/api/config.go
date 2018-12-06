@@ -55,9 +55,10 @@ type Config struct {
 	ServiceCatalogClusterID        uuid.UUID `json:"serviceCatalogClusterId,omitempty"`
 
 	// geneva logging sector
-	GenevaLoggingSector    string `json:"genevaLoggingSector,omitempty"`
-	GenevaLoggingAccount   string `json:"genevaLoggingAccount,omitempty"`
-	GenevaLoggingNamespace string `json:"genevaLoggingNamespace,omitempty"`
+	GenevaLoggingSector              string `json:"genevaLoggingSector,omitempty"`
+	GenevaLoggingAccount             string `json:"genevaLoggingAccount,omitempty"`
+	GenevaLoggingNamespace           string `json:"genevaLoggingNamespace,omitempty"`
+	GenevaLoggingControlPlaneAccount string `json:"genevaLoggingControlPlaneAccount,omitempty"`
 }
 
 // ImageConfig contains all images for the pods

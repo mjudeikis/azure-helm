@@ -89,18 +89,19 @@ func ConvertToAdmin(cs *OpenShiftManagedCluster) *admin.OpenShiftManagedCluster 
 
 func convertConfigToAdmin(cs *Config) *admin.Config {
 	return &admin.Config{
-		ImageOffer:              &cs.ImageOffer,
-		ImagePublisher:          &cs.ImagePublisher,
-		ImageSKU:                &cs.ImageSKU,
-		ImageVersion:            &cs.ImageVersion,
-		ConfigStorageAccount:    &cs.ConfigStorageAccount,
-		RegistryStorageAccount:  &cs.RegistryStorageAccount,
-		Certificates:            convertCertificateConfigToAdmin(cs.Certificates),
-		Images:                  convertImageConfigToAdmin(cs.Images),
-		ServiceCatalogClusterID: &cs.ServiceCatalogClusterID,
-		GenevaLoggingSector:     &cs.GenevaLoggingSector,
-		GenevaLoggingAccount:    &cs.GenevaLoggingAccount,
-		GenevaLoggingNamespace:  &cs.GenevaLoggingNamespace,
+		ImageOffer:                       &cs.ImageOffer,
+		ImagePublisher:                   &cs.ImagePublisher,
+		ImageSKU:                         &cs.ImageSKU,
+		ImageVersion:                     &cs.ImageVersion,
+		ConfigStorageAccount:             &cs.ConfigStorageAccount,
+		RegistryStorageAccount:           &cs.RegistryStorageAccount,
+		Certificates:                     convertCertificateConfigToAdmin(cs.Certificates),
+		Images:                           convertImageConfigToAdmin(cs.Images),
+		ServiceCatalogClusterID:          &cs.ServiceCatalogClusterID,
+		GenevaLoggingSector:              &cs.GenevaLoggingSector,
+		GenevaLoggingAccount:             &cs.GenevaLoggingAccount,
+		GenevaLoggingNamespace:           &cs.GenevaLoggingNamespace,
+		GenevaLoggingControlPlaneAccount: &cs.GenevaLoggingControlPlaneAccount,
 	}
 }
 
