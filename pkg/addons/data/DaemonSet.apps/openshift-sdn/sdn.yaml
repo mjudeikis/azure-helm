@@ -141,6 +141,8 @@ spec:
       hostPID: true
       priorityClassName: system-node-critical
       serviceAccountName: sdn
+      updateStrategy:
+        type: OnDelete
       volumes:
       - hostPath:
           path: /etc/origin/node
@@ -175,3 +177,5 @@ spec:
       - hostPath:
           path: /var/lib/cni/networks/openshift-sdn
         name: host-var-lib-cni-networks-openshift-sdn
+  updateStrategy:
+    type: OnDelete
