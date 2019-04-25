@@ -114,6 +114,9 @@ func handleImageStream(folder string, item *item) (touched []string, err error) 
 			if err != nil {
 				return nil, err
 			}
+			// handle overrides. Each override should
+			// have a comment and upstream issue open
+			handleOverrides(&is)
 			iss = append(iss, is)
 		}
 	case *imagev1.ImageStreamList:
@@ -142,6 +145,18 @@ func handleImageStream(folder string, item *item) (touched []string, err error) 
 	}
 
 	return touched, nil
+}
+
+func handleOverrides(is *imagev1.ImageStream) {
+	// upstream issue: https://xxxxx
+	// jboss-amq-62 is locked to version x and we need version y
+	// because of ....
+	// branch is locked due code freeze.
+	if is.Name == "jboss-amq-62" {
+		for i, _ := range is.Spec.Tags {
+			is.Spec.Tags[i].ReferencePolicy.Type = imagev1.LocalTagReferencePolicy
+		}
+	}
 }
 
 func handleImageStreams(index index) error {
