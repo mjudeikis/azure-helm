@@ -8,7 +8,8 @@ if [[ -n "$(git status --porcelain)" ]]; then
 	
 	. hack/tests/ci-operator-prepare.sh
 	go run hack/giter/giter.go -sourcerepo mjudeikis/openshift-azure -targetrepo mjudeikis/openshift-azure
-
+else
+	echo "Dependencies have no material difference than what is committed."
 fi
 
-echo "Dependencies have no material difference than what is committed."
+
