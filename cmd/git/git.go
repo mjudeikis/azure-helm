@@ -163,6 +163,25 @@ func (g *giter) pushCommit(ctx context.Context, ref *github.Reference, tree *git
 	return err
 }
 
+// createPR creates a pull request. Based on: https://godoc.org/github.com/google/go-github/github#example-PullRequestsService-Create
+func (g *giter) createPR(ctx context.Context) (err error) {
+	newPR := &github.NewPullRequest{
+		Title:               to.StringPtr("content update"),
+		Head:                to.StringPtr("content.update"),
+		Base:                to.StringPtr("master"),
+		Body:                to.StringPtr("content update test"),
+		MaintainerCanModify: github.Bool(true),
+	}
+
+	pr, _, err := g.gh.PullRequests.Create(ctx, "mjudeikis", "openshift-azure", newPR)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("PR created: %s\n", pr.GetHTMLURL())
+	return nil
+}
+
 func (g *giter) run(ctx context.Context) error {
 	ref, err := g.getRef(ctx)
 	if err != nil {
@@ -180,10 +199,10 @@ func (g *giter) run(ctx context.Context) error {
 	if err := g.pushCommit(ctx, ref, tree); err != nil {
 		log.Fatalf("Unable to create the commit: %s\n", err)
 	}
-	//
-	//if err := createPR(); err != nil {
-	//	log.Fatalf("Error while creating the pull request: %s", err)
-	//}
+
+	if err := g.createPR(ctx); err != nil {
+		log.Fatalf("Error while creating the pull request: %s", err)
+	}
 
 	return nil
 }
