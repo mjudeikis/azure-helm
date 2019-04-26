@@ -27,6 +27,7 @@ if [[ -n "$(git status --porcelain)" ]]; then
 
         git add *
         git commit -m "${PR_TITLE}"
+        git push origin2 ${CONTENT_BRANCH}:${CONTENT_BRANCH}
 
 else
 	echo "Dependencies have no material difference than what is committed."
