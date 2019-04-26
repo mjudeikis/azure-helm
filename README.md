@@ -4,6 +4,8 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/openshift/openshift-azure)](https://goreportcard.com/report/github.com/openshift/openshift-azure)
 [![GoDoc](https://godoc.org/github.com/openshift/openshift-azure?status.svg)](https://godoc.org/github.com/openshift/openshift-azure)
 
+asdasd
+
 ## Prerequisites
 
 Note that this README is targeted at AOS-Azure contributors. If you are not a
