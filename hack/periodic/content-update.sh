@@ -17,7 +17,7 @@ if [[ -n "$(git status --porcelain)" ]]; then
     git fetch origin2
     git rev-parse --verify origin2/${CONTENT_BRANCH}
     # create new branch or reuse old
-    if [ $? == 1 ]; then
+    if [ $? != 0 ]; then
         echo "branch $CONTENT_BRANCH does not exist"
         git checkout upstream/master
         git checkout -b $CONTENT_BRANCH
