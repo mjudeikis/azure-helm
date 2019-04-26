@@ -26,6 +26,7 @@ if [[ -n "$(git status --porcelain)" ]]; then
     fi
 
         git add *
+        git commit -m "${PR_TITLE}"
 
 else
 	echo "Dependencies have no material difference than what is committed."
