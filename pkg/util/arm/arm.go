@@ -24,11 +24,23 @@ func FixupAPIVersions(template map[string]interface{}, versions map[string]strin
 	for _, resource := range jsonpath.MustCompile("$.resources.*").Get(template) {
 		typ := jsonpath.MustCompile("$.type").MustGetString(resource)
 		provider := strings.Split(typ, "/")[0]
+		// subresources inherits version from the provider
 		apiVersion, found := versions[provider]
 		if !found {
 			return fmt.Errorf("couldn't find version for provider %q", provider)
 		}
 		jsonpath.MustCompile("$.apiVersion").Set(resource, apiVersion)
+		// nested objects
+		for _, resource := range jsonpath.MustCompile("$.resources.*").Get(resource) {
+			typ := jsonpath.MustCompile("$.type").MustGetString(resource)
+			provider := strings.Split(typ, "/")[0]
+			// subresources inherits version from the provider
+			apiVersion, found := versions[provider]
+			if !found {
+				return fmt.Errorf("couldn't find version for provider %q", provider)
+			}
+			jsonpath.MustCompile("$.apiVersion").Set(resource, apiVersion)
+		}
 	}
 	return nil
 }

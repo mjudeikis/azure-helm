@@ -32,6 +32,6 @@ func getAPIServerClient(cs *api.OpenShiftManagedCluster) wait.SimpleHTTPClient {
 
 func (u *Upgrade) WaitForHealthzStatusOk(ctx context.Context) error {
 	u.Log.Infof("waiting for API server healthz")
-	_, err := wait.ForHTTPStatusOk(ctx, u.Log, u.GetAPIServerClient(u.Cs), "https://"+u.Cs.Properties.FQDN+"/healthz", time.Second)
+	_, err := wait.ForHTTPStatusOk(ctx, u.Log, u.GetAPIServerClient(u.Cs), "https://"+u.Cs.Properties.FQDN+":6443/healthz", time.Second)
 	return err
 }

@@ -21,6 +21,7 @@ var (
 	// above.
 	versionMap = map[string]string{
 		"Microsoft.Compute": "2018-10-01",
+		"extensions": "2018-10-01",
 		"Microsoft.Network": "2018-07-01",
 		"Microsoft.Storage": "2018-02-01",
 	}
@@ -30,11 +31,14 @@ const (
 	vnetName                                      = "vnet"
 	vnetMasterSubnetName                          = "master"
 	vnetComputeSubnetName                         = "compute"
+
 	ipAPIServerInternalName                       = "ip-apiserver-internal"
 	ipAPIServerPublicName                         = "ip-apiserver-public"
+
 	ipOutboundName                                = "ip-outbound"
 	lbAPIServerInternalName                       = "lb-apiserver-internal"
 	lbAPIServerPublicName                         = "lb-apiserver-public"
+
 	lbAPIServerFrontendConfigurationName          = "frontend"
 	lbAPIServerBackendPoolName                    = "backend"
 	lbAPIServerLoadBalancingRuleName              = "port-6443"
@@ -396,7 +400,7 @@ func (g *simpleGenerator) lbAPIServerPublic() *network.LoadBalancer {
 				{
 					ProbePropertiesFormat: &network.ProbePropertiesFormat{
 						Protocol:          network.ProbeProtocolHTTPS,
-						Port:              to.Int32Ptr(443),
+						Port:              to.Int32Ptr(6443),
 						IntervalInSeconds: to.Int32Ptr(5),
 						NumberOfProbes:    to.Int32Ptr(2),
 						RequestPath:       to.StringPtr("/healthz"),
@@ -526,6 +530,201 @@ func (g *simpleGenerator) nsgWorker() *network.SecurityGroup {
 	}
 }
 
+func (g *simpleGenerator) Nic(app *api.AgentPoolProfile, suffix string) (*network.Interface) {
+	return g.nic(g.cs, app, suffix)
+}
+
+func (g *simpleGenerator) nic(cs *api.OpenShiftManagedCluster, app *api.AgentPoolProfile, suffix string) (*network.Interface){
+	nic := &network.Interface{
+		Name: to.StringPtr(names.GetVMName(app, suffix)+"-nic"),
+		Location: to.StringPtr(g.cs.Location),
+		Type: to.StringPtr("Microsoft.Network/networkInterfaces"),
+		InterfacePropertiesFormat: &network.InterfacePropertiesFormat{
+			IPConfigurations: &[]network.InterfaceIPConfiguration{
+				{
+					Name: to.StringPtr("pipConfig"),
+					InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
+						PrivateIPAllocationMethod: network.Dynamic,
+					},
+				},
+			},
+		},
+	}
+	if app.Role == api.AgentPoolProfileRoleMaster {
+		(*nic.InterfacePropertiesFormat.IPConfigurations)[0].InterfaceIPConfigurationPropertiesFormat.Subnet = &network.Subnet{
+			ID: to.StringPtr(resourceid.ResourceID(
+				cs.Properties.AzProfile.SubscriptionID,
+				cs.Properties.AzProfile.ResourceGroup,
+				"Microsoft.Network/virtualNetworks",
+				vnetName,
+			) + "/subnets/" + vnetMasterSubnetName),
+		}
+		(*nic.InterfacePropertiesFormat.IPConfigurations)[0].LoadBalancerBackendAddressPools = &[]network.BackendAddressPool{
+			{
+				ID: to.StringPtr(resourceid.ResourceID(
+					cs.Properties.AzProfile.SubscriptionID,
+					cs.Properties.AzProfile.ResourceGroup,
+					"Microsoft.Network/loadBalancers",
+					lbKubernetesName,
+				) + "/backendAddressPools/" + lbAPIServerBackendPoolName),
+			},
+		}
+	} else {
+		(*nic.InterfacePropertiesFormat.IPConfigurations)[0].InterfaceIPConfigurationPropertiesFormat.Subnet = &network.Subnet{
+			ID: to.StringPtr(resourceid.ResourceID(
+				cs.Properties.AzProfile.SubscriptionID,
+				cs.Properties.AzProfile.ResourceGroup,
+				"Microsoft.Network/virtualNetworks",
+				vnetName,
+			) + "/subnets/" + vnetComputeSubnetName),
+		}
+	
+	}
+	return nic
+}
+
+func (g *simpleGenerator) Vms(app *api.AgentPoolProfile,backupBlob, suffix string) (*compute.VirtualMachine, error) {
+	return vms(g.cs, app, backupBlob, suffix, g.testConfig)
+}
+
+
+func vms(cs *api.OpenShiftManagedCluster, app *api.AgentPoolProfile, backupBlob, suffix string, testConfig api.TestConfig) (*compute.VirtualMachine, error) {
+	sshPublicKey, err := tls.SSHPublicKeyAsString(&cs.Config.SSHKey.PublicKey)
+	if err != nil {
+		return nil, err
+	}
+
+	masterStartup, err := Asset("master-startup.sh")
+	if err != nil {
+		return nil, err
+	}
+
+	nodeStartup, err := Asset("node-startup.sh")
+	if err != nil {
+		return nil, err
+	}
+
+	var script string
+	if app.Role == api.AgentPoolProfileRoleMaster {
+		b, err := template.Template("master-startup.sh", string(masterStartup), nil, map[string]interface{}{
+			"Config":         &cs.Config,
+			"BackupBlobName": backupBlob,
+		})
+		if err != nil {
+			return nil, err
+		}
+		script = base64.StdEncoding.EncodeToString(b)
+	} else {
+		b, err := template.Template("node-startup.sh", string(nodeStartup), nil, map[string]interface{}{
+			"Config": &cs.Config,
+			"Role":   app.Role,
+		})
+		if err != nil {
+			return nil, err
+		}
+		script = base64.StdEncoding.EncodeToString(b)
+	}
+
+	vms := &compute.VirtualMachine{
+		Name:     to.StringPtr(names.GetVMName(app, suffix)),
+		Type:     to.StringPtr("Microsoft.Compute/virtualMachines"),
+		Location: to.StringPtr(cs.Location),
+		Plan: &compute.Plan{
+			Name:      to.StringPtr(cs.Config.ImageSKU),
+			Publisher: to.StringPtr(cs.Config.ImagePublisher),
+			Product:   to.StringPtr(cs.Config.ImageOffer),
+		},
+		VirtualMachineProperties: &compute.VirtualMachineProperties{
+			HardwareProfile: &compute.HardwareProfile{
+				VMSize: compute.VirtualMachineSizeTypesStandardDS4V2,
+			},
+			StorageProfile: &compute.StorageProfile{
+				ImageReference: &compute.ImageReference{
+					Publisher: to.StringPtr(cs.Config.ImagePublisher),
+					Offer:     to.StringPtr(cs.Config.ImageOffer),
+					Sku:       to.StringPtr(cs.Config.ImageSKU),
+					Version:   to.StringPtr(cs.Config.ImageVersion),
+				},
+				OsDisk: &compute.OSDisk{
+					Caching:      compute.CachingTypesReadWrite,
+					CreateOption: compute.DiskCreateOptionTypesFromImage,
+					ManagedDisk: &compute.ManagedDiskParameters{
+						StorageAccountType: compute.StorageAccountTypesPremiumLRS,
+					},
+				},
+			},
+			OsProfile: &compute.OSProfile{
+					AdminUsername:      to.StringPtr(vmssAdminUsername),
+					LinuxConfiguration: &compute.LinuxConfiguration{
+						DisablePasswordAuthentication: to.BoolPtr(true),
+						SSH: &compute.SSHConfiguration{
+							PublicKeys: &[]compute.SSHPublicKey{
+								{
+									Path:    to.StringPtr("/home/" + vmssAdminUsername + "/.ssh/authorized_keys"),
+									KeyData: to.StringPtr(sshPublicKey),
+								},
+							},
+						},
+					},
+			},
+			NetworkProfile: &compute.NetworkProfile{
+				NetworkInterfaces: &[]compute.NetworkInterfaceReference{
+					{
+						ID: to.StringPtr(resourceid.ResourceID(
+							cs.Properties.AzProfile.SubscriptionID,
+							cs.Properties.AzProfile.ResourceGroup,
+							"Microsoft.Network/networkInterfaces",
+							names.GetVMName(app, suffix)+"-nic")),	
+					},
+				},
+			},
+		},
+		Resources: &[]compute.VirtualMachineExtension{
+			{
+				Name: to.StringPtr(names.GetVMName(app, "")+vmssCSEName),
+				Type: to.StringPtr("extensions"),
+				VirtualMachineExtensionProperties: &compute.VirtualMachineExtensionProperties{
+					Publisher:               to.StringPtr("Microsoft.Azure.Extensions"),
+					Type:                    to.StringPtr("CustomScript"),
+					TypeHandlerVersion:      to.StringPtr("2.0"),
+					AutoUpgradeMinorVersion: to.BoolPtr(true),
+					Settings:                map[string]interface{}{},
+					ProtectedSettings: map[string]interface{}{
+						"script": script,
+					},
+				},
+			},
+		},
+	}
+
+	if app.Role == api.AgentPoolProfileRoleMaster {
+		vms.StorageProfile.DataDisks = &[]compute.DataDisk{
+			{
+				Lun:          to.Int32Ptr(0),
+				Caching:      compute.CachingTypesReadOnly,
+				CreateOption: compute.DiskCreateOptionTypesEmpty,
+				DiskSizeGB:   to.Int32Ptr(256),
+			},
+		}
+	}
+
+	if testConfig.ImageResourceName != "" {
+		vms.Plan = nil
+		vms.VirtualMachineProperties.StorageProfile.ImageReference = &compute.ImageReference{
+			ID: to.StringPtr(resourceid.ResourceID(
+				cs.Properties.AzProfile.SubscriptionID,
+				testConfig.ImageResourceGroup,
+				"Microsoft.Compute/images",
+				testConfig.ImageResourceName,
+			)),
+		}
+	}
+
+	return vms, nil
+}
+
+
+// TODO: Remove these
 func (g *simpleGenerator) Vmss(app *api.AgentPoolProfile, backupBlob, suffix string) (*compute.VirtualMachineScaleSet, error) {
 	return vmss(g.cs, app, backupBlob, suffix, g.testConfig)
 }

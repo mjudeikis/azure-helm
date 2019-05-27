@@ -10,9 +10,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 	"time"
 
 	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
 
 	"github.com/openshift/openshift-azure/pkg/api"
@@ -43,6 +45,7 @@ func (g *simpleGenerator) Generate(ctx context.Context, backupBlob string, isUpd
 			g.ipAPIServerPublic(),
 			g.lbAPIServerInternal(),
 			g.lbAPIServerPublic(),
+			// for VM's to use as reference
 			g.storageAccount(g.cs.Config.RegistryStorageAccount, map[string]*string{
 				"type": to.StringPtr("registry"),
 			}),
@@ -57,11 +60,15 @@ func (g *simpleGenerator) Generate(ctx context.Context, backupBlob string, isUpd
 	}
 	for _, app := range g.cs.Properties.AgentPoolProfiles {
 		if app.Role == api.AgentPoolProfileRoleMaster || !isUpdate {
-			vmss, err := g.Vmss(&app, backupBlob, suffix)
-			if err != nil {
-				return nil, err
+			for i := 0; i <= int(app.Count); i++ {
+				vms, err := g.Vms(&app, backupBlob, strconv.Itoa(i))
+				if err != nil {
+					return nil, err
+				}
+				t.Resources = append(t.Resources, vms)
+				nic := g.Nic(&app, strconv.Itoa(i))
+				t.Resources = append(t.Resources, nic)
 			}
-			t.Resources = append(t.Resources, vmss)
 		}
 	}
 
@@ -80,7 +87,7 @@ func (g *simpleGenerator) Generate(ctx context.Context, backupBlob string, isUpd
 	if err != nil {
 		return nil, err
 	}
-
+	spew.Dump(azuretemplate)
 	arm.FixupDepends(g.cs.Properties.AzProfile.SubscriptionID, g.cs.Properties.AzProfile.ResourceGroup, azuretemplate)
 
 	return azuretemplate, nil

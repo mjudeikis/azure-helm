@@ -11,6 +11,11 @@ import (
 //MasterScalesetName contains the name of the master VMs scaleset
 const MasterScalesetName = "ss-master"
 
+// GetVMName returns the VMS name for a given AgentPoolProfile
+func GetVMName(app *api.AgentPoolProfile, suffix string) string {
+	return app.Name + "-" + suffix
+}
+
 // GetScalesetName returns the VMSS name for a given AgentPoolProfile
 func GetScalesetName(app *api.AgentPoolProfile, suffix string) string {
 	if app.Role == api.AgentPoolProfileRoleMaster {
