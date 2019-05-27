@@ -88,3 +88,5 @@ import:
   repo: https://github.com/openshift/service-catalog.git
 - package: github.com/spf13/cobra
   version: v0.0.3
+- package: github.com/openshift/installer
+  version: release-4.2

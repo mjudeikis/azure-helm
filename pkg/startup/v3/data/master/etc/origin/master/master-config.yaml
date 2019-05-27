@@ -180,7 +180,7 @@ serviceAccountConfig:
   publicKeyFiles:
   - serviceaccounts.public.key
 servingInfo:
-  bindAddress: 0.0.0.0:443
+  bindAddress: 0.0.0.0:6443
   bindNetwork: tcp4
   certFile: master.server.crt
   clientCA: ca.crt

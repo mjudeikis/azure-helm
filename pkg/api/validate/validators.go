@@ -194,7 +194,7 @@ func validateCertProfile(path string, cp *api.CertProfile) (errs []error) {
 func validateAgentPoolProfiles(apps []api.AgentPoolProfile, vnet *net.IPNet) (errs []error) {
 	appmap := map[api.AgentPoolProfileRole]api.AgentPoolProfile{}
 
-	for i, app := range apps {
+	for _, app := range apps {
 		if _, found := validAgentPoolProfileRoles[app.Role]; !found {
 			errs = append(errs, fmt.Errorf("invalid role %q in properties.agentPoolProfiles[%q]", app.Role, app.Name))
 		}
@@ -204,12 +204,9 @@ func validateAgentPoolProfiles(apps []api.AgentPoolProfile, vnet *net.IPNet) (er
 		}
 		appmap[app.Role] = app
 
-		if i > 0 && app.SubnetCIDR != apps[i-1].SubnetCIDR { // TODO: in the future, test that these are disjoint
-			errs = append(errs, fmt.Errorf("invalid properties.agentPoolProfiles.subnetCidr %q: all subnetCidrs must match", app.SubnetCIDR))
-		}
-
 		errs = append(errs, validateAgentPoolProfile(&app, vnet)...)
 	}
+	// TODO: Add subnet validation here
 
 	for role := range validAgentPoolProfileRoles {
 		if _, found := appmap[role]; !found {

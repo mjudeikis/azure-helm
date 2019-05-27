@@ -389,21 +389,6 @@ func TestValidate(t *testing.T) {
 				errors.New(`invalid properties.agentPoolProfiles["infra"].vmSize "SuperBigVM"`),
 			},
 		},
-		"agent pool unmatched subnet cidr": {
-			f: func(oc *api.OpenShiftManagedCluster) {
-				oc.Properties.AgentPoolProfiles[2].SubnetCIDR = "10.0.1.0/24"
-			},
-			expectedErrs: []error{errors.New(`invalid properties.agentPoolProfiles.subnetCidr "10.0.1.0/24": all subnetCidrs must match`)},
-		},
-		"agent pool bad subnet cidr": {
-			f: func(oc *api.OpenShiftManagedCluster) {
-				oc.Properties.AgentPoolProfiles[2].SubnetCIDR = "foo"
-			},
-			expectedErrs: []error{
-				errors.New(`invalid properties.agentPoolProfiles.subnetCidr "foo": all subnetCidrs must match`),
-				errors.New(`invalid properties.agentPoolProfiles["mycompute"].subnetCidr "foo"`),
-			},
-		},
 		"agent pool subnet cidr clash cluster": {
 			f: func(oc *api.OpenShiftManagedCluster) {
 				for i := range oc.Properties.AgentPoolProfiles {

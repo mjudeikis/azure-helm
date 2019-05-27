@@ -15,23 +15,23 @@ properties:
         customerAdminGroupId: {{ .AADGroupAdminsID | quote }}
 {{- end }}
   networkProfile:
-    vnetCidr: 10.0.0.0/8
+    vnetCidr: 10.0.0.0/16
   masterPoolProfile:
     count: 3
     vmSize: Standard_D4s_v3
-    subnetCidr: 10.0.0.0/24
+    subnetCidr: 10.0.0.0/19
   agentPoolProfiles:
   - name: infra
     role: infra
     count: 2
     vmSize: Standard_D4s_v3
-    subnetCidr: 10.0.0.0/24
+    subnetCidr: 10.0.32.0/19
     osType: Linux
   - name: compute
     role: compute
     count: 1
     vmSize: Standard_D4s_v3
-    subnetCidr: 10.0.0.0/24
+    subnetCidr: 10.0.64.0/19
     osType: Linux
   routerProfiles:
     - name: default
