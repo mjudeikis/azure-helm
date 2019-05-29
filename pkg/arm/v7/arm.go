@@ -36,6 +36,7 @@ func New(ctx context.Context, log *logrus.Entry, cs *api.OpenShiftManagedCluster
 }
 
 func (g *simpleGenerator) Generate(ctx context.Context, backupBlob string, isUpdate bool, suffix string) (map[string]interface{}, error) {
+	g.log.Debugf("generate with update=%t", isUpdate)
 	t := arm.Template{
 		Schema:         "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
 		ContentVersion: "1.0.0.0",
@@ -43,6 +44,7 @@ func (g *simpleGenerator) Generate(ctx context.Context, backupBlob string, isUpd
 			g.vnet(),
 			g.ipAPIServerInternal(),
 			g.ipAPIServerPublic(),
+
 			g.lbAPIServerInternal(),
 			g.lbAPIServerPublic(),
 			// for VM's to use as reference
@@ -59,13 +61,22 @@ func (g *simpleGenerator) Generate(ctx context.Context, backupBlob string, isUpd
 		t.Resources = append(t.Resources, g.ipOutbound(), g.nsgWorker())
 	}
 	for _, app := range g.cs.Properties.AgentPoolProfiles {
-		if app.Role == api.AgentPoolProfileRoleMaster || !isUpdate {
-			for i := 0; i <= int(app.Count); i++ {
+		if !isUpdate {
+			for i := 0; i < int(app.Count); i++ {
+				// create one componets per VM in agentPoolProfile
+				g.log.Debug("Provision control-plane infrastructure")
 				vms, err := g.Vms(&app, backupBlob, strconv.Itoa(i))
 				if err != nil {
 					return nil, err
 				}
 				t.Resources = append(t.Resources, vms)
+
+				cse, err := g.cse(g.cs, &app, backupBlob, strconv.Itoa(i), g.testConfig)
+				if err != nil {
+					return nil, err
+				}
+				t.Resources = append(t.Resources, cse)
+
 				nic := g.Nic(&app, strconv.Itoa(i))
 				t.Resources = append(t.Resources, nic)
 			}

@@ -285,7 +285,53 @@ func (g *simpleGenerator) lbAPIServerInternal() *network.LoadBalancer {
 					Name: to.StringPtr(lbAPIServerBoostrapProbeName),
 				},
 			},
-			InboundNatRules: &[]network.InboundNatRule{},
+			InboundNatRules: &[]network.InboundNatRule{
+				{
+					InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
+						FrontendIPConfiguration: &network.SubResource{
+							ID: to.StringPtr(resourceid.ResourceID(
+								g.cs.Properties.AzProfile.SubscriptionID,
+								g.cs.Properties.AzProfile.ResourceGroup,
+								"Microsoft.Network/loadBalancers",
+								lbAPIServerInternalName,
+							) + "/frontendIPConfigurations/" + lbAPIServerFrontendConfigurationName),
+						},
+						FrontendPort: to.Int32Ptr(2201),
+						BackendPort: to.Int32Ptr(22),						
+					},
+					Name: to.StringPtr("master-0-ssh"),
+				},
+				{
+					InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
+						FrontendIPConfiguration: &network.SubResource{
+							ID: to.StringPtr(resourceid.ResourceID(
+								g.cs.Properties.AzProfile.SubscriptionID,
+								g.cs.Properties.AzProfile.ResourceGroup,
+								"Microsoft.Network/loadBalancers",
+								lbAPIServerInternalName,
+							) + "/frontendIPConfigurations/" + lbAPIServerFrontendConfigurationName),
+						},
+						FrontendPort: to.Int32Ptr(2202),
+						BackendPort: to.Int32Ptr(22),						
+					},
+					Name: to.StringPtr("master-1-ssh"),
+				},
+				{
+					InboundNatRulePropertiesFormat: &network.InboundNatRulePropertiesFormat{
+						FrontendIPConfiguration: &network.SubResource{
+							ID: to.StringPtr(resourceid.ResourceID(
+								g.cs.Properties.AzProfile.SubscriptionID,
+								g.cs.Properties.AzProfile.ResourceGroup,
+								"Microsoft.Network/loadBalancers",
+								lbAPIServerInternalName,
+							) + "/frontendIPConfigurations/" + lbAPIServerFrontendConfigurationName),
+						},
+						FrontendPort: to.Int32Ptr(2203),
+						BackendPort: to.Int32Ptr(22),						
+					},
+					Name: to.StringPtr("master-2-ssh"),
+				},
+			},
 			InboundNatPools: &[]network.InboundNatPool{},
 			OutboundRules:   &[]network.OutboundRule{},
 		},
@@ -565,8 +611,18 @@ func (g *simpleGenerator) nic(cs *api.OpenShiftManagedCluster, app *api.AgentPoo
 					cs.Properties.AzProfile.SubscriptionID,
 					cs.Properties.AzProfile.ResourceGroup,
 					"Microsoft.Network/loadBalancers",
-					lbKubernetesName,
+					lbAPIServerInternalName,
 				) + "/backendAddressPools/" + lbAPIServerBackendPoolName),
+			},
+		}
+		(*nic.InterfacePropertiesFormat.IPConfigurations)[0].LoadBalancerInboundNatRules = &[]network.InboundNatRule{
+			{
+			ID: to.StringPtr(resourceid.ResourceID(
+				cs.Properties.AzProfile.SubscriptionID,
+				cs.Properties.AzProfile.ResourceGroup,
+				"Microsoft.Network/loadBalancers",
+				lbAPIServerInternalName,
+			) +"/inboundNatRules/"+ names.GetVMName(app, suffix)+"-ssh"),
 			},
 		}
 	} else {
@@ -592,37 +648,6 @@ func vms(cs *api.OpenShiftManagedCluster, app *api.AgentPoolProfile, backupBlob,
 	sshPublicKey, err := tls.SSHPublicKeyAsString(&cs.Config.SSHKey.PublicKey)
 	if err != nil {
 		return nil, err
-	}
-
-	masterStartup, err := Asset("master-startup.sh")
-	if err != nil {
-		return nil, err
-	}
-
-	nodeStartup, err := Asset("node-startup.sh")
-	if err != nil {
-		return nil, err
-	}
-
-	var script string
-	if app.Role == api.AgentPoolProfileRoleMaster {
-		b, err := template.Template("master-startup.sh", string(masterStartup), nil, map[string]interface{}{
-			"Config":         &cs.Config,
-			"BackupBlobName": backupBlob,
-		})
-		if err != nil {
-			return nil, err
-		}
-		script = base64.StdEncoding.EncodeToString(b)
-	} else {
-		b, err := template.Template("node-startup.sh", string(nodeStartup), nil, map[string]interface{}{
-			"Config": &cs.Config,
-			"Role":   app.Role,
-		})
-		if err != nil {
-			return nil, err
-		}
-		script = base64.StdEncoding.EncodeToString(b)
 	}
 
 	vms := &compute.VirtualMachine{
@@ -654,6 +679,7 @@ func vms(cs *api.OpenShiftManagedCluster, app *api.AgentPoolProfile, backupBlob,
 				},
 			},
 			OsProfile: &compute.OSProfile{
+					ComputerName:  to.StringPtr(names.GetVMName(app, suffix)),
 					AdminUsername:      to.StringPtr(vmssAdminUsername),
 					LinuxConfiguration: &compute.LinuxConfiguration{
 						DisablePasswordAuthentication: to.BoolPtr(true),
@@ -675,22 +701,6 @@ func vms(cs *api.OpenShiftManagedCluster, app *api.AgentPoolProfile, backupBlob,
 							cs.Properties.AzProfile.ResourceGroup,
 							"Microsoft.Network/networkInterfaces",
 							names.GetVMName(app, suffix)+"-nic")),	
-					},
-				},
-			},
-		},
-		Resources: &[]compute.VirtualMachineExtension{
-			{
-				Name: to.StringPtr(names.GetVMName(app, "")+vmssCSEName),
-				Type: to.StringPtr("extensions"),
-				VirtualMachineExtensionProperties: &compute.VirtualMachineExtensionProperties{
-					Publisher:               to.StringPtr("Microsoft.Azure.Extensions"),
-					Type:                    to.StringPtr("CustomScript"),
-					TypeHandlerVersion:      to.StringPtr("2.0"),
-					AutoUpgradeMinorVersion: to.BoolPtr(true),
-					Settings:                map[string]interface{}{},
-					ProtectedSettings: map[string]interface{}{
-						"script": script,
 					},
 				},
 			},
@@ -722,6 +732,57 @@ func vms(cs *api.OpenShiftManagedCluster, app *api.AgentPoolProfile, backupBlob,
 
 	return vms, nil
 }
+
+func (g *simpleGenerator) cse(cs *api.OpenShiftManagedCluster, app *api.AgentPoolProfile, backupBlob, suffix string, testConfig api.TestConfig) (*compute.VirtualMachineExtension, error) {
+	masterStartup, err := Asset("master-startup.sh")
+	if err != nil {
+		return nil, err
+	}
+
+	nodeStartup, err := Asset("node-startup.sh")
+	if err != nil {
+		return nil, err
+	}
+
+	var script string
+	if app.Role == api.AgentPoolProfileRoleMaster {
+		b, err := template.Template("master-startup.sh", string(masterStartup), nil, map[string]interface{}{
+			"Config":         &cs.Config,
+			"BackupBlobName": backupBlob,
+		})
+		if err != nil {
+			return nil, err
+		}
+		script = base64.StdEncoding.EncodeToString(b)
+	} else {
+		b, err := template.Template("node-startup.sh", string(nodeStartup), nil, map[string]interface{}{
+			"Config": &cs.Config,
+			"Role":   app.Role,
+		})
+		if err != nil {
+			return nil, err
+		}
+		script = base64.StdEncoding.EncodeToString(b)
+	}
+
+	return &compute.VirtualMachineExtension{
+		VirtualMachineExtensionProperties: &compute.VirtualMachineExtensionProperties{
+			Publisher:               to.StringPtr("Microsoft.Azure.Extensions"),
+				Type:                    to.StringPtr("CustomScript"),
+				TypeHandlerVersion:      to.StringPtr("2.0"),
+				AutoUpgradeMinorVersion: to.BoolPtr(true),
+				Settings:                map[string]interface{}{},
+				ProtectedSettings: map[string]interface{}{
+					"script": script,
+				},
+		},
+		Name:     to.StringPtr(names.GetVMName(app, suffix)+"/"+vmssCSEName),
+		Type:     to.StringPtr("Microsoft.Compute/virtualMachines/extensions"),
+		Location: to.StringPtr(cs.Location),
+	}, nil
+}
+
+
 
 
 // TODO: Remove these

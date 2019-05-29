@@ -49,4 +49,4 @@ if [[ ${#opts[@]} -eq 0 ]]; then
     opts=("$(az vmss list-instance-public-ips -g $RESOURCEGROUP -n ss-master --query "[0].ipAddress" | tr -d '"')")
 fi
 
-ssh -A -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=ERROR -l cloud-user "${opts[@]}"
+ssh -A -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -v -o LogLevel=ERROR -l cloud-user "${opts[@]}"
