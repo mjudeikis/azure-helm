@@ -365,6 +365,17 @@ type SubscriptionUsagesClientAPI interface {
 
 var _ SubscriptionUsagesClientAPI = (*sql.SubscriptionUsagesClient)(nil)
 
+// VirtualClustersClientAPI contains the set of methods on the VirtualClustersClient type.
+type VirtualClustersClientAPI interface {
+	Delete(ctx context.Context, resourceGroupName string, virtualClusterName string) (result sql.VirtualClustersDeleteFuture, err error)
+	Get(ctx context.Context, resourceGroupName string, virtualClusterName string) (result sql.VirtualCluster, err error)
+	List(ctx context.Context) (result sql.VirtualClusterListResultPage, err error)
+	ListByResourceGroup(ctx context.Context, resourceGroupName string) (result sql.VirtualClusterListResultPage, err error)
+	Update(ctx context.Context, resourceGroupName string, virtualClusterName string, parameters sql.VirtualClusterUpdate) (result sql.VirtualClustersUpdateFuture, err error)
+}
+
+var _ VirtualClustersClientAPI = (*sql.VirtualClustersClient)(nil)
+
 // ExtendedDatabaseBlobAuditingPoliciesClientAPI contains the set of methods on the ExtendedDatabaseBlobAuditingPoliciesClient type.
 type ExtendedDatabaseBlobAuditingPoliciesClientAPI interface {
 	CreateOrUpdate(ctx context.Context, resourceGroupName string, serverName string, databaseName string, parameters sql.ExtendedDatabaseBlobAuditingPolicy) (result sql.ExtendedDatabaseBlobAuditingPolicy, err error)
@@ -553,6 +564,19 @@ type ManagedDatabasesClientAPI interface {
 
 var _ ManagedDatabasesClientAPI = (*sql.ManagedDatabasesClient)(nil)
 
+// SensitivityLabelsClientAPI contains the set of methods on the SensitivityLabelsClient type.
+type SensitivityLabelsClientAPI interface {
+	CreateOrUpdate(ctx context.Context, resourceGroupName string, serverName string, databaseName string, schemaName string, tableName string, columnName string, parameters sql.SensitivityLabel) (result sql.SensitivityLabel, err error)
+	Delete(ctx context.Context, resourceGroupName string, serverName string, databaseName string, schemaName string, tableName string, columnName string) (result autorest.Response, err error)
+	DisableRecommendation(ctx context.Context, resourceGroupName string, serverName string, databaseName string, schemaName string, tableName string, columnName string) (result autorest.Response, err error)
+	EnableRecommendation(ctx context.Context, resourceGroupName string, serverName string, databaseName string, schemaName string, tableName string, columnName string) (result autorest.Response, err error)
+	Get(ctx context.Context, resourceGroupName string, serverName string, databaseName string, schemaName string, tableName string, columnName string, sensitivityLabelSource sql.SensitivityLabelSource) (result sql.SensitivityLabel, err error)
+	ListCurrentByDatabase(ctx context.Context, resourceGroupName string, serverName string, databaseName string, filter string) (result sql.SensitivityLabelListResultPage, err error)
+	ListRecommendedByDatabase(ctx context.Context, resourceGroupName string, serverName string, databaseName string, includeDisabledRecommendations *bool, skipToken string, filter string) (result sql.SensitivityLabelListResultPage, err error)
+}
+
+var _ SensitivityLabelsClientAPI = (*sql.SensitivityLabelsClient)(nil)
+
 // ServerAutomaticTuningClientAPI contains the set of methods on the ServerAutomaticTuningClient type.
 type ServerAutomaticTuningClientAPI interface {
 	Get(ctx context.Context, resourceGroupName string, serverName string) (result sql.ServerAutomaticTuning, err error)
@@ -576,9 +600,18 @@ var _ ServerDNSAliasesClientAPI = (*sql.ServerDNSAliasesClient)(nil)
 type ServerSecurityAlertPoliciesClientAPI interface {
 	CreateOrUpdate(ctx context.Context, resourceGroupName string, serverName string, parameters sql.ServerSecurityAlertPolicy) (result sql.ServerSecurityAlertPoliciesCreateOrUpdateFuture, err error)
 	Get(ctx context.Context, resourceGroupName string, serverName string) (result sql.ServerSecurityAlertPolicy, err error)
+	ListByServer(ctx context.Context, resourceGroupName string, serverName string) (result sql.LogicalServerSecurityAlertPolicyListResultPage, err error)
 }
 
 var _ ServerSecurityAlertPoliciesClientAPI = (*sql.ServerSecurityAlertPoliciesClient)(nil)
+
+// RestorableDroppedManagedDatabasesClientAPI contains the set of methods on the RestorableDroppedManagedDatabasesClient type.
+type RestorableDroppedManagedDatabasesClientAPI interface {
+	Get(ctx context.Context, resourceGroupName string, managedInstanceName string, restorableDroppedDatabaseID string) (result sql.RestorableDroppedManagedDatabase, err error)
+	ListByInstance(ctx context.Context, resourceGroupName string, managedInstanceName string) (result sql.RestorableDroppedManagedDatabaseListResultPage, err error)
+}
+
+var _ RestorableDroppedManagedDatabasesClientAPI = (*sql.RestorableDroppedManagedDatabasesClient)(nil)
 
 // RestorePointsClientAPI contains the set of methods on the RestorePointsClient type.
 type RestorePointsClientAPI interface {

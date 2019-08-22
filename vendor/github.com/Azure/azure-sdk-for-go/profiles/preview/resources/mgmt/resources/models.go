@@ -1,6 +1,6 @@
 // +build go1.9
 
-// Copyright 2018 Microsoft Corporation
+// Copyright 2019 Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ package resources
 import (
 	"context"
 
-	original "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2018-05-01/resources"
+	original "github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
 )
 
 const (
@@ -80,8 +80,10 @@ type DeploymentProperties = original.DeploymentProperties
 type DeploymentPropertiesExtended = original.DeploymentPropertiesExtended
 type DeploymentValidateResult = original.DeploymentValidateResult
 type DeploymentsClient = original.DeploymentsClient
+type DeploymentsCreateOrUpdateAtManagementGroupScopeFuture = original.DeploymentsCreateOrUpdateAtManagementGroupScopeFuture
 type DeploymentsCreateOrUpdateAtSubscriptionScopeFuture = original.DeploymentsCreateOrUpdateAtSubscriptionScopeFuture
 type DeploymentsCreateOrUpdateFuture = original.DeploymentsCreateOrUpdateFuture
+type DeploymentsDeleteAtManagementGroupScopeFuture = original.DeploymentsDeleteAtManagementGroupScopeFuture
 type DeploymentsDeleteAtSubscriptionScopeFuture = original.DeploymentsDeleteAtSubscriptionScopeFuture
 type DeploymentsDeleteFuture = original.DeploymentsDeleteFuture
 type ExportTemplateRequest = original.ExportTemplateRequest

@@ -1,6 +1,6 @@
 // +build go1.9
 
-// Copyright 2018 Microsoft Corporation
+// Copyright 2019 Microsoft Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ package batch
 import (
 	"context"
 
-	original "github.com/Azure/azure-sdk-for-go/services/batch/mgmt/2018-12-01/batch"
+	original "github.com/Azure/azure-sdk-for-go/services/batch/mgmt/2019-04-01/batch"
 )
 
 const (
@@ -281,6 +281,7 @@ type TaskSchedulingPolicy = original.TaskSchedulingPolicy
 type UserAccount = original.UserAccount
 type UserIdentity = original.UserIdentity
 type VirtualMachineConfiguration = original.VirtualMachineConfiguration
+type VirtualMachineFamilyCoreQuota = original.VirtualMachineFamilyCoreQuota
 type WindowsConfiguration = original.WindowsConfiguration
 type WindowsUserConfiguration = original.WindowsUserConfiguration
 

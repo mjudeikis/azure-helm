@@ -228,3 +228,74 @@ func TestCognitivesServicesAuthorization(t *testing.T) {
 		t.Fatalf("azure: CognitiveServicesAuthorizer#WithAuthorization failed to set %s header", apiKeyAuthorizerHeader)
 	}
 }
+
+func TestBasicAuthorization(t *testing.T) {
+	ba := NewBasicAuthorizer("Aladdin", "open sesame")
+	req, err := Prepare(mocks.NewRequest(), ba.WithAuthorization())
+
+	if err != nil {
+		t.Fatalf("BasicAuthorizer#WithAuthorization returned an error (%v)", err)
+	} else if req.Header.Get(http.CanonicalHeaderKey(authorization)) != basic+" QWxhZGRpbjpvcGVuIHNlc2FtZQ==" {
+		t.Fatalf("BasicAuthorizer#WithAuthorization failed to set %s header", authorization)
+	}
+}
+
+func TestBasicAuthorizationPasswordOnly(t *testing.T) {
+	ba := NewBasicAuthorizer("", "dummyKey")
+	req, err := Prepare(mocks.NewRequest(), ba.WithAuthorization())
+
+	if err != nil {
+		t.Fatalf("BasicAuthorizer#WithAuthorization returned an error (%v)", err)
+	} else if req.Header.Get(http.CanonicalHeaderKey(authorization)) != basic+" OmR1bW15S2V5" {
+		t.Fatalf("BasicAuthorizer#WithAuthorization failed to set %s header", authorization)
+	}
+}
+
+type mockMTSPTProvider struct {
+	p string
+	a []string
+}
+
+func (m mockMTSPTProvider) PrimaryOAuthToken() string {
+	return m.p
+}
+
+func (m mockMTSPTProvider) AuxiliaryOAuthTokens() []string {
+	return m.a
+}
+
+func TestMultitenantAuthorizationOne(t *testing.T) {
+	mtSPTProvider := mockMTSPTProvider{
+		p: "primary",
+		a: []string{"aux1"},
+	}
+	mt := NewMultiTenantServicePrincipalTokenAuthorizer(mtSPTProvider)
+	req, err := Prepare(mocks.NewRequest(), mt.WithAuthorization())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if primary := req.Header.Get(headerAuthorization); primary != "Bearer primary" {
+		t.Fatalf("bad primary authorization header %s", primary)
+	}
+	if aux := req.Header.Get(headerAuxAuthorization); aux != "Bearer aux1" {
+		t.Fatalf("bad auxiliary authorization header %s", aux)
+	}
+}
+
+func TestMultitenantAuthorizationThree(t *testing.T) {
+	mtSPTProvider := mockMTSPTProvider{
+		p: "primary",
+		a: []string{"aux1", "aux2", "aux3"},
+	}
+	mt := NewMultiTenantServicePrincipalTokenAuthorizer(mtSPTProvider)
+	req, err := Prepare(mocks.NewRequest(), mt.WithAuthorization())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if primary := req.Header.Get(headerAuthorization); primary != "Bearer primary" {
+		t.Fatalf("bad primary authorization header %s", primary)
+	}
+	if aux := req.Header.Get(headerAuxAuthorization); aux != "Bearer aux1; Bearer aux2; Bearer aux3" {
+		t.Fatalf("bad auxiliary authorization header %s", aux)
+	}
+}
