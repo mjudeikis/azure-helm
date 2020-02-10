@@ -8,6 +8,7 @@ import (
 
 type cmdConfig struct {
 	config.Common
+	init bool
 }
 
 // NewCommand returns the cobra command for "startup".
@@ -23,6 +24,8 @@ func NewCommand() *cobra.Command {
 			return start(cfg)
 		},
 	}
+
+	cc.Flags().Bool("init", false, "Whether to run the init code path for dns")
 
 	return cc
 }

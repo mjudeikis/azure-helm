@@ -22,6 +22,7 @@ import (
 	"github.com/openshift/openshift-azure/pkg/api"
 	"github.com/openshift/openshift-azure/pkg/cluster/names"
 	"github.com/openshift/openshift-azure/pkg/util/azureclient"
+	"github.com/openshift/openshift-azure/pkg/util/azureclient/compute"
 	"github.com/openshift/openshift-azure/pkg/util/azureclient/keyvault"
 	"github.com/openshift/openshift-azure/pkg/util/enrich"
 	"github.com/openshift/openshift-azure/pkg/util/template"
@@ -250,4 +251,34 @@ func (s *startup) writeFiles(role api.AgentPoolProfileRole, w writers.Writer, ho
 	}
 
 	return w.Close()
+}
+
+func (s *startup) writeSearchDomain(ctx context.Context, log *logrus.Entry) error {
+
+	spp := &s.cs.Properties.WorkerServicePrincipalProfile
+
+	s.log.Info("creating clients")
+	authorizer, err := azureclient.NewAuthorizer(spp.ClientID, spp.Secret, s.cs.Properties.AzProfile.TenantID, "Microsoft.Compute")
+	if err != nil {
+		return err
+	}
+
+	cli := compute.NewVirtualMachineScaleSetsClient(ctx, log, s.cs.Properties.AzProfile.SubscriptionID, authorizer)
+	_, err = cli.Get(ctx, s.cs.Properties.AzProfile.ResourceGroup, "ss-master")
+	if err != nil {
+		return err
+	}
+
+	// for _, nwinfo := range vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations {
+	// fetch the search domain for this host
+	// }
+
+	// Write /etc/dhcp/dhclient-eth0.conf
+	/*
+			interface "eth0" {
+			    supersede domain-name "{DOMAIN SEARCH}"
+		        supersede domain-search "{DOMAIN SEARCH}";
+		    }
+	*/
+	return nil
 }
