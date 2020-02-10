@@ -45,7 +45,7 @@ func readConfig(ctx context.Context, log *logrus.Entry) (*api.OpenShiftManagedCl
 	return cs, err
 }
 
-func runInit(ctx context.Context, log *logrus.Entry) error {
+func runInitNetwork(ctx context.Context, log *logrus.Entry, role api.AgentPoolProfileRole) error {
 	cs, err := readConfig(ctx, log)
 	if err != nil {
 		return err
@@ -56,22 +56,19 @@ func runInit(ctx context.Context, log *logrus.Entry) error {
 		return err
 	}
 
-	/* TODO
-	  Detect whether or not we have custom dns
-	  if !customDNS {
-		return nil
-	  }
-	*/
-
-	err := writeSearchDomain(ctx, log)
+	// TODO: Remove gates when we comfortable with this behavior
+	//if cs.Properties.PrivateAPIServer {
+	err = s.WriteSearchDomain(ctx, log, role)
 	if err != nil {
 		return err
 	}
 
+	//}
+
 	return nil
 }
 
-func runStartup(ctx context.Context, log *logrus.Entry) error {
+func runStartup(ctx context.Context, log *logrus.Entry, role api.AgentPoolProfileRole) error {
 	cs, err := readConfig(ctx, log)
 	if err != nil {
 		return err
@@ -101,12 +98,21 @@ func start(cfg *cmdConfig) error {
 	log := logrus.NewEntry(logger)
 	log.Info("startup pod starting")
 
-	if cfg.init {
-		if err := runInit(context.Background(), log); err != nil {
+	var role api.AgentPoolProfileRole
+
+	switch api.AgentPoolProfileRole(cfg.role) {
+	case api.AgentPoolProfileRoleMaster:
+		role = api.AgentPoolProfileRoleMaster
+	default:
+		role = api.AgentPoolProfileRoleCompute
+	}
+
+	if cfg.initNetwork {
+		if err := runInitNetwork(context.Background(), log, role); err != nil {
 			return err
 		}
 	} else {
-		if err := runStartup(context.Background(), log); err != nil {
+		if err := runStartup(context.Background(), log, role); err != nil {
 			return err
 		}
 	}

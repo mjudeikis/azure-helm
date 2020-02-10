@@ -13,6 +13,8 @@ import (
 // InterfacesClient is a minimal interface for azure NewInterfacesClient
 type InterfacesClient interface {
 	Get(ctx context.Context, resourceGroupName string, networkInterfaceName string, expand string) (network.Interface, error)
+	GetVirtualMachineScaleSetNetworkInterface(ctx context.Context, resourceGroupName string, virtualMachineScaleSetName string, virtualmachineIndex string, networkInterfaceName string, expand string) (result network.Interface, err error)
+	ListVirtualMachineScaleSetNetworkInterfaces(ctx context.Context, resourceGroupName string, virtualMachineScaleSetName string) (result network.InterfaceListResultPage, err error)
 }
 
 type interfacesClient struct {

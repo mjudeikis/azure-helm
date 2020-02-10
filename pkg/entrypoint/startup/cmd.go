@@ -8,7 +8,8 @@ import (
 
 type cmdConfig struct {
 	config.Common
-	init bool
+	initNetwork bool
+	role        string
 }
 
 // NewCommand returns the cobra command for "startup".
@@ -25,7 +26,9 @@ func NewCommand() *cobra.Command {
 		},
 	}
 
-	cc.Flags().Bool("init", false, "Whether to run the init code path for dns")
+	cc.Flags().Bool("init-network", false, "Run init network")
+	cc.Flags().String("role", "master", "Role [master, compute]")
+	cobra.MarkFlagRequired(cc.Flags(), "role")
 
 	return cc
 }
@@ -34,6 +37,14 @@ func configFromCmd(cmd *cobra.Command) (*cmdConfig, error) {
 	c := &cmdConfig{}
 	var err error
 	c.Common, err = config.CommonConfigFromCmd(cmd)
+	if err != nil {
+		return nil, err
+	}
+	c.initNetwork, err = cmd.Flags().GetBool("init-network")
+	if err != nil {
+		return nil, err
+	}
+	c.role, err = cmd.Flags().GetString("role")
 	if err != nil {
 		return nil, err
 	}

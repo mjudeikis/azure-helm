@@ -25,6 +25,8 @@ type Interface interface {
 	WriteFiles(ctx context.Context) error
 	Hash(role api.AgentPoolProfileRole) ([]byte, error)
 	GetWorkerCs() *api.OpenShiftManagedCluster
+	// currently only implemented in v15 only
+	WriteSearchDomain(ctx context.Context, log *logrus.Entry, role api.AgentPoolProfileRole) error
 }
 
 // New returns a new startup Interface according to the cluster version running

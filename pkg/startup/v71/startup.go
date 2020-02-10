@@ -242,3 +242,7 @@ func (s *startup) filePermissions(filepath string) os.FileMode {
 	}
 	return perm
 }
+
+func (s *startup) WriteSearchDomain(ctx context.Context, log *logrus.Entry, role api.AgentPoolProfileRole) error {
+	return fmt.Errorf("not supported in this release")
+}

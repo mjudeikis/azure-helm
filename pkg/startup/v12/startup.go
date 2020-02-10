@@ -244,3 +244,7 @@ func (s *startup) writeFiles(role api.AgentPoolProfileRole, w writers.Writer, ho
 
 	return w.Close()
 }
+
+func (s *startup) WriteSearchDomain(ctx context.Context, log *logrus.Entry, role api.AgentPoolProfileRole) error {
+	return fmt.Errorf("not supported in this release")
+}

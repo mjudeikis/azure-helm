@@ -17,6 +17,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/openshift/openshift-azure/pkg/api"
@@ -24,6 +26,7 @@ import (
 	"github.com/openshift/openshift-azure/pkg/util/azureclient"
 	"github.com/openshift/openshift-azure/pkg/util/azureclient/compute"
 	"github.com/openshift/openshift-azure/pkg/util/azureclient/keyvault"
+	"github.com/openshift/openshift-azure/pkg/util/azureclient/network"
 	"github.com/openshift/openshift-azure/pkg/util/enrich"
 	"github.com/openshift/openshift-azure/pkg/util/template"
 	"github.com/openshift/openshift-azure/pkg/util/writers"
@@ -253,25 +256,51 @@ func (s *startup) writeFiles(role api.AgentPoolProfileRole, w writers.Writer, ho
 	return w.Close()
 }
 
-func (s *startup) writeSearchDomain(ctx context.Context, log *logrus.Entry) error {
+func (s *startup) WriteSearchDomain(ctx context.Context, log *logrus.Entry, role api.AgentPoolProfileRole) error {
+	var clientID, clientSecret string
+	if role == api.AgentPoolProfileRoleMaster {
+		clientID = s.cs.Properties.MasterServicePrincipalProfile.ClientID
+		clientSecret = s.cs.Properties.MasterServicePrincipalProfile.Secret
+	} else {
+		clientID = s.cs.Properties.WorkerServicePrincipalProfile.ClientID
+		clientSecret = s.cs.Properties.WorkerServicePrincipalProfile.Secret
+	}
 
-	spp := &s.cs.Properties.WorkerServicePrincipalProfile
-
-	s.log.Info("creating clients")
-	authorizer, err := azureclient.NewAuthorizer(spp.ClientID, spp.Secret, s.cs.Properties.AzProfile.TenantID, "Microsoft.Compute")
+	authorizer, err := azureclient.NewAuthorizer(clientID, clientSecret, s.cs.Properties.AzProfile.TenantID, "")
 	if err != nil {
 		return err
 	}
 
-	cli := compute.NewVirtualMachineScaleSetsClient(ctx, log, s.cs.Properties.AzProfile.SubscriptionID, authorizer)
-	_, err = cli.Get(ctx, s.cs.Properties.AzProfile.ResourceGroup, "ss-master")
-	if err != nil {
-		return err
+	ncli := network.NewInterfacesClient(ctx, log, s.cs.Properties.AzProfile.SubscriptionID, authorizer)
+	vmsscli := compute.NewVirtualMachineScaleSetsClient(ctx, log, s.cs.Properties.AzProfile.SubscriptionID, authorizer)
+
+	var prefix string
+	for _, app := range s.cs.Properties.AgentPoolProfiles {
+		if app.Role == role {
+			prefix = names.GetScalesetName(&app, "")
+		}
 	}
 
-	// for _, nwinfo := range vmss.VirtualMachineScaleSetProperties.VirtualMachineProfile.NetworkProfile.NetworkInterfaceConfigurations {
-	// fetch the search domain for this host
-	// }
+	if len(prefix) > 0 {
+		vmssList, err := vmsscli.List(ctx, s.cs.Properties.AzProfile.ResourceGroup)
+		if err != nil {
+			return err
+		}
+
+		for _, vmss := range vmssList {
+			if strings.HasPrefix(*vmss.Name, prefix) {
+				nic, err := ncli.GetVirtualMachineScaleSetNetworkInterface(ctx, s.cs.Properties.AzProfile.ResourceGroup, *vmss.Name, "0", "nic", "")
+				if err != nil {
+					return err
+				}
+				if nic.DNSSettings != nil {
+					spew.Dump(nic.DNSSettings.InternalDomainNameSuffix)
+				}
+			}
+
+		}
+
+	}
 
 	// Write /etc/dhcp/dhclient-eth0.conf
 	/*
