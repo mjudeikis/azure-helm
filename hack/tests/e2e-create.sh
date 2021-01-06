@@ -14,12 +14,6 @@ echo "Prepate CI"
 
 . hack/tests/ci-prepare.sh
 
-
-echo "RESOURCEGROUP is $RESOURCEGROUP"
-
-ls -la .
-ls -la $(pwd)/secrets
-
 start_monitoring
 set_build_images
 
